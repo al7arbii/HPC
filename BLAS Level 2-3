@@ -1,0 +1,73 @@
+using Random
+
+# Generate random data
+function random_matrix(m, n)
+    return rand(-5.0:0.1:5.0, m, n)
+end
+
+function random_vector(n)
+    return rand(-5.0:0.1:5.0, n)
+end
+
+# BLAS LEVEL-2: Matrix-Vector Operations
+function gemv(A, x)
+    m, n = size(A)
+    y = zeros(m)
+    
+    for i in 1:m
+        for j in 1:n
+            y[i] += A[i, j] * x[j]
+        end
+    end
+    
+    return y
+end
+
+# BLAS LEVEL-3: Matrix-Matrix Operations
+function gemm(A, B)
+    m, k = size(A)
+    k2, n = size(B)
+    C = zeros(m, n)
+    
+    for i in 1:m
+        for j in 1:n
+            for l in 1:k
+                C[i, j] += A[i, l] * B[l, j]
+            end
+        end
+    end
+    
+    return C
+end
+
+# Demonstrations
+println("BLAS Level-2 and Level-3 Operations")
+println("=" ^ 40)
+
+# Level-2: Matrix-Vector multiplication
+println("\nLevel-2: Matrix-Vector (GEMV)")
+A = random_matrix(3, 4)
+x = random_vector(4)
+
+println("Matrix A:")
+display(A)
+println("Vector x:")
+display(x)
+
+y = gemv(A, x)
+println("Result y = A * x:")
+display(y)
+
+# Level-3: Matrix-Matrix multiplication
+println("\n\nLevel-3: Matrix-Matrix (GEMM)")
+A_mm = random_matrix(3, 2)
+B_mm = random_matrix(2, 4)
+
+println("Matrix A:")
+display(A_mm)
+println("Matrix B:")
+display(B_mm)
+
+C = gemm(A_mm, B_mm)
+println("Result C = A * B:")
+display(C)
