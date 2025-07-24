@@ -16,8 +16,3 @@ for i in 1:length(array_one)
     element_sum[i] = array_one[i] + array_two[i]
 end
 println(element_sum)
-
-# Dot product
-array_dot_product = 0
-array_dot_product = sum(array_one .* array_two)
-println(array_dot_product)

@@ -1,0 +1,14 @@
+# Method for creating array of size from command line
+function create_array(n)
+       array_one = Array(rand(1:50, n))
+       array_two = Array(rand(1:50, n))
+       return array_one, array_two
+end
+
+# Array creation
+array_one, array_two = create_array(5)
+
+# Dot product
+array_dot_product = 0
+array_dot_product = sum(array_one .* array_two)
+@time d = sum(array_one .* array_two)
