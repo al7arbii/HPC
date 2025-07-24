@@ -1,0 +1,34 @@
+# Generate random data
+function random_matrix(m, n)
+    return rand(-5.0:0.1:5.0, m, n)
+end
+
+
+# BLAS LEVEL-3: Matrix-Matrix Operations
+function gemm(A, B)
+    m, k = size(A)
+    k, n = size(B)
+    C = zeros(m, n)
+    
+    for i in 1:m
+        for j in 1:n
+            for l in 1:k
+                C[i, j] += A[i, l] * B[l, j]
+            end
+        end
+    end
+    
+    return C
+end
+
+# Demonstrations
+println("BLAS Level-3 Operations")
+println("=" ^ 40)
+
+# Level-3: Matrix-Matrix multiplication
+println("\n\nLevel-3: Matrix-Matrix (GEMM)")
+A_mm = random_matrix(1000, 3000)
+B_mm = random_matrix(3000, 1000)
+)
+println("Result C = A * B:")
+@time e = A_mm * B_mm
