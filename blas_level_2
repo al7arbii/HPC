@@ -1,0 +1,30 @@
+# Generate random data
+function random_matrix(m, n)
+    return rand(-5.0:0.1:5.0, m, n)
+end
+
+function random_vector(n)
+    return rand(-5.0:0.1:5.0, n)
+end
+
+# BLAS LEVEL-2: Matrix-Vector Operations
+function gemv(A, x)
+    m, n = size(A)
+    y = zeros(m)
+    
+    for i in 1:m
+        for j in 1:n
+            y[i] += A[i, j] * x[j]
+        end
+    end
+    
+    return y
+end
+
+# Level-2: Matrix-Vector multiplication
+println("\nLevel-2: Matrix-Vector (GEMV)")
+A = random_matrix(3000, 1000)
+x = random_vector(1000)
+
+println("Result y = A * x:")
+@time y = gemv(A, x)
