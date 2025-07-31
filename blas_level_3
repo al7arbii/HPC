@@ -9,9 +9,9 @@ end
 
 
 # BLAS LEVEL-3: Matrix-Matrix Operations
-function gemm(A, B)
+function matrix_multiply(A, B)
     m, k = size(A)
-    k, n = size(B)
+    k2, n = size(B)
     C = zeros(m, n)
     
     for i in 1:m
@@ -21,7 +21,6 @@ function gemm(A, B)
             end
         end
     end
-    
     return C
 end
 
@@ -30,7 +29,7 @@ function tiled_multiply(A, B, tile_size)
     m, n, k = size(A, 1), size(B, 2), size(A, 2)
     C = zeros(m, n)
     
-    for i in 1:tile_size:m
+    @views Threads.@threads for i in 1:tile_size:m
         for j in 1:tile_size:n
             for l in 1:tile_size:k
                 # Define tile boundaries
@@ -39,7 +38,7 @@ function tiled_multiply(A, B, tile_size)
                 l_end = min(l + tile_size - 1, k)
                 
                 # Multiply tiles
-                C[i:i_end, j:j_end] += A[i:i_end, l:l_end] * B[l:l_end, j:j_end]
+                BLAS.gemm!('N', 'N', 1.0, A[i:i_end, l:l_end], B[l:l_end, j:j_end], 1.0, C[i:i_end, j:j_end])
             end
         end
     end
@@ -47,10 +46,22 @@ function tiled_multiply(A, B, tile_size)
 end
 
 
-# SINGLE-THREADED TILE-MATRIX
-LinearAlgebra.BLAS.set_num_threads(1)
-A = randn(1024, 2048)
-B = randn(2048, 1024)
-tile_size = 128 
-C = @benchmark tiled_multiply(A, B, tile_size)
-println(C)
+# MULTI-THREADED TILE-MATRIX
+# SET NUMBER OF THREADS
+LinearAlgebra.BLAS.set_num_threads(8)
+
+# CREATE RANDOM DATA
+n = 4096
+A = randn(n, n)
+B = randn(n, n)
+tile_size = 2048
+
+# RESULT TIMES
+result = @benchmark tiled_multiply($A, $B, tile_size) samples=10 evals=1 seconds=Inf
+println(result.times ./ 1e9)
+mean_time = (time(mean(result)) / 1e9)
+println(mean_time)
+
+# GFLOPS Calculation
+gflops = (2 * n^3) / (mean_time * 1e9)
+println("GFLOPS: $(round(gflops, digits=2))")

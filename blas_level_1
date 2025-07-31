@@ -1,14 +1,23 @@
 # Method for creating array of size from command line
-function create_array(n)
-       array_one = Array(rand(1:50, n))
-       array_two = Array(rand(1:50, n))
-       return array_one, array_two
+function create_vector(n)
+       vector_one = Vector(rand(1:50, n))
+       vector_two = Vector(rand(1:50, n))
+       return vector_one, vector_two
+end
+
+# General Vector-Vector
+function gevv(x, y)
+    result = 0.0
+    for i in 1:length(x)
+        result += x[i] * y[i]
+    end
+    return result
 end
 
 # Array creation
-array_one, array_two = create_array(5)
+vector_two, vector_one = create_vector(10000)
 
 # Dot product
-array_dot_product = 0
-array_dot_product = sum(array_one .* array_two)
-@time d = sum(array_one .* array_two)
+A = gevv(vector_one, vector_two)
+B = sum(vector_one .* vector_two)
+println(isapprox(A, B, atol=1e-200000000))
