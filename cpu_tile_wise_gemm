@@ -3,10 +3,9 @@ using LinearAlgebra.BLAS
 using BenchmarkTools
 
 # Generate random data
-function random_matrix(m, n)
+function random_matrix(Float32, m, n)
     return rand(-5.0:0.1:5.0, m, n)
 end
-
 
 # BLAS LEVEL-3: Matrix-Matrix Operations
 function matrix_multiply(A, B)
@@ -48,13 +47,13 @@ end
 
 # MULTI-THREADED TILE-MATRIX
 # SET NUMBER OF THREADS
-LinearAlgebra.BLAS.set_num_threads(8)
+LinearAlgebra.BLAS.set_num_threads(32)
 
 # CREATE RANDOM DATA
-n = 4096
+n = 8192
 A = randn(n, n)
 B = randn(n, n)
-tile_size = 2048
+tile_size = 256
 
 # RESULT TIMES
 result = @benchmark tiled_multiply($A, $B, tile_size) samples=10 evals=1 seconds=Inf

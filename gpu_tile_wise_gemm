@@ -1,0 +1,48 @@
+using CUDA
+using LinearAlgebra
+using BenchmarkTools
+CUDA.device!(2)
+
+function tiled_multiply_gpu(A::CuArray{Float16}, B::CuArray{Float16}, tile_size::Int)
+    m, n, k = size(A, 1), size(B, 2), size(A, 2)
+    C = CUDA.zeros(Float16, m, n)
+
+    for i in 1:tile_size:m
+        for j in 1:tile_size:n
+            for l in 1:tile_size:k
+                i_end = min(i + tile_size - 1, m)
+                j_end = min(j + tile_size - 1, n)
+                l_end = min(l + tile_size - 1, k)
+
+                A_tile = @view A[i:i_end, l:l_end]
+                B_tile = @view B[l:l_end, j:j_end]
+                C_tile = @view C[i:i_end, j:j_end]
+
+                mul!(C_tile, A_tile, B_tile, 1.0f0, 1.0f0)
+            end
+        end
+    end
+
+    return C
+end
+
+n = 8192
+tile_size = 512
+
+# GPU-side matrix generation
+A = CUDA.rand(Float16, n, n)
+B = CUDA.rand(Float16, n, n)
+
+# Warm-up
+tiled_multiply_gpu(A, B, tile_size)
+
+# Benchmark
+result = @benchmark tiled_multiply_gpu($A, $B, $tile_size) samples=10 evals=1
+println(result.times ./ 1e9)
+println(isapprox(tiled_multiply_gpu(A, B, tile_size), A * B, rtol=1e-14))
+
+mean_time = time(mean(result)) / 1e9
+println("Mean time: $mean_time s")
+
+gflops = (2 * n^3) / (mean_time * 1e9)
+println("GFLOPS: $(round(gflops, digits=2))")

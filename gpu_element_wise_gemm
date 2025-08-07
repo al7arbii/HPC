@@ -1,0 +1,45 @@
+using CUDA
+using BenchmarkTools
+
+CUDA.device!(2)  # Select the second GPU (GPU 2)
+
+# Generate random matrix on GPU
+function random_matrix_gpu(m, n)
+    return CUDA.rand(Float32, m, n)
+end
+
+# GPU Matrix Multiply using cuBLAS (fastest path)
+function matrix_multiply_gpu(A, B)
+    CUDA.synchronize() 
+    C = A * B
+    CUDA.synchronize()  # Make sure GPU work finished
+    return C
+end
+
+# Warmup kernel (dummy operation)
+function warmup()
+    x = CUDA.fill(1.0f0, 1024, 1024)
+    y = CUDA.fill(2.0f0, 1024, 1024)
+    z = x .* y  # elementwise multiply
+    synchronize()
+end
+
+warmup() 
+
+# Set matrix size
+n = 8192
+A = random_matrix_gpu(n, n)
+B = random_matrix_gpu(n, n)
+
+# Benchmark GPU matrix multiplication
+result = @benchmark matrix_multiply_gpu($A, $B) samples=10 evals=1 seconds=Inf
+println("Times (s): ", result.times ./ 1e9)
+
+# Get mean time in seconds
+mean_time = mean(result.times) / 1e9
+println("Mean time (s): ", mean_time)
+
+# GFLOPS calculation
+gflops = (2 * n^3) / (mean_time * 1e9)
+println("GFLOPS: $(round(gflops, digits=2))")
+println("Running on GPU: ", CUDA.device())

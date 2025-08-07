@@ -1,0 +1,34 @@
+using LinearAlgebra
+using LinearAlgebra.BLAS
+using BenchmarkTools
+
+# GEMM function
+function matrix_multiply(A, B)
+    m, k = size(A)
+    k, n = size(B)
+    C = zeros(m, n)
+    
+    for i in 1:m
+        for j in 1:n
+            for l in 1:k
+                C[i, j] += A[i, l] * B[l, j]
+            end
+        end
+    end
+    return C
+end
+
+# GENERATE RANDOM DATA
+n = 1024
+A = randn(n,n)
+B = randn(n,n)
+
+# RESULT TIMES
+result = @benchmark matrix_multiply($A, $B) samples=10 evals=1 seconds=Inf
+println(result.times ./ 1e9)
+mean_time = (time(mean(result)) / 1e9)
+println(mean_time)
+
+# GFLOPS Calculation
+gflops = (2 * n^3) / (mean_time * 1e9)
+println("GFLOPS: $(round(gflops, digits=2))")

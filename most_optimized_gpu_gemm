@@ -1,0 +1,61 @@
+using CUDA
+using BenchmarkTools
+CUDA.device!(2) # Select the third GPU
+
+struct TileMatMul
+    transA::Char
+    transB::Char
+    alpha::Float32
+    beta::Float32
+end
+
+function (op::TileMatMul)(A::CuArray{Float32}, B::CuArray{Float32})
+    m, k = size(A)
+    k2, n = size(B)
+    @assert k == k2 "Inner dimensions must match"
+    C = CUDA.zeros(Float32, m, n)
+
+    CUDA.CUBLAS.gemm!(
+        op.transA, op.transB,
+        op.alpha,
+        A, B,
+        op.beta,
+        C
+    )
+    CUDA.synchronize()  # Make sure GPU work finishes here before returning
+
+    return C
+end
+
+
+function run_benchmark(N::Int, tile_op::TileMatMul)
+    println("Allocating $N x $N Float32 matrices on GPU...")
+    A = CUDA.rand(Float32, N, N)
+    B = CUDA.rand(Float32, N, N)
+
+    println("Running cuBLAS gemm (Float32)...")
+    C = tile_op(A, B)
+
+    result = @benchmark $tile_op($A, $B) setup=(CUDA.synchronize()) teardown=(CUDA.synchronize()) samples=10 evals=1 seconds=Inf
+    mean_time = median(result).time / 1e9
+
+    gflops = 2 * N^3 / (mean_time * 1e9)
+
+    println("Matrix Size: $N x $N")
+    println("Median Time: $(round(mean_time, digits=4)) s")
+    println("GFLOPS: $(round(gflops, digits=2))")
+
+    # Reference result for correctness check
+    C_ref = CUDA.zeros(Float32, N, N)
+    CUDA.CUBLAS.gemm!('N', 'N', 1.0f0, A, B, 0.0f0, C_ref)
+    max_error = maximum(abs.(C .- C_ref))
+    println("Max Error vs reference: $(max_error)")
+end
+
+function main()
+    N = 16384
+    op = TileMatMul('N', 'N', 1.0f0, 0.0f0)
+    run_benchmark(N, op)
+end
+
+main()
